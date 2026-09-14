@@ -11,6 +11,7 @@ import {
 } from 'react-native';
 import { Ionicons, Feather, MaterialCommunityIcons, FontAwesome5 } from '@expo/vector-icons';
 import MaterialIcon from '../components/MaterialIcon';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 export default function DetalheScreen({ route, navigation }) {
   // Recebe o item passado por parâmetro na navegação ou utiliza dados padrão caso acessado diretamente
@@ -36,6 +37,8 @@ export default function DetalheScreen({ route, navigation }) {
   };
 
   const [estoqueAtual, setEstoqueAtual] = useState(material.estoque);
+
+  const [statusAtual, setStatusAtual] = useState(material.status);
 
   const getStatusColor = (tipo) => {
     switch (tipo) {
@@ -91,7 +94,55 @@ export default function DetalheScreen({ route, navigation }) {
     );
   };
 
+  const alterarStatus = async (novoStatus) => {
+  try {
+    const dadosSalvos = await AsyncStorage.getItem('@materiais');
+
+    if (!dadosSalvos) {
+      return;
+    }
+
+    const materiais = JSON.parse(dadosSalvos);
+
+    const novaLista = materiais.map((item) => {
+      if (item.id === material.id) {
+        return {
+          ...item,
+          status: novoStatus
+        };
+      }
+
+      return item;
+    });
+
+    await AsyncStorage.setItem(
+      '@materiais',
+      JSON.stringify(novaLista)
+    );
+
+    setStatusAtual(novoStatus);
+
+    Alert.alert(
+      'Status atualizado',
+      `O status foi alterado para "${novoStatus}".`
+    );
+
+  } catch (error) {
+    console.log(
+      'Erro ao alterar status:',
+      error
+    );
+
+    Alert.alert(
+      'Erro',
+      'Não foi possível alterar o status.'
+    );
+  }
+};
+
   return (
+
+    
     <SafeAreaView style={styles.safeArea}>
       <StatusBar barStyle="light-content" backgroundColor="#1d3557" />
 
@@ -235,6 +286,46 @@ export default function DetalheScreen({ route, navigation }) {
           <Text style={styles.detalhesText}>{material.detalhes}</Text>
         </View>
 
+        {/* Alteração de Status - Fase 2 */}
+<View style={styles.statusContainer}>
+
+  <Text style={styles.sectionTitle}>
+    Alterar Status
+  </Text>
+
+  <Text style={styles.currentStatus}>
+    Status atual: {statusAtual}
+  </Text>
+
+  <TouchableOpacity
+    style={styles.statusButton}
+    onPress={() => alterarStatus('Em estoque')}
+  >
+    <Text style={styles.statusButtonText}>
+      Em estoque
+    </Text>
+  </TouchableOpacity>
+
+  <TouchableOpacity
+    style={styles.statusButton}
+    onPress={() => alterarStatus('Estoque baixo')}
+  >
+    <Text style={styles.statusButtonText}>
+      Estoque baixo
+    </Text>
+  </TouchableOpacity>
+
+  <TouchableOpacity
+    style={styles.statusButton}
+    onPress={() => alterarStatus('Em falta')}
+  >
+    <Text style={styles.statusButtonText}>
+      Em falta
+    </Text>
+  </TouchableOpacity>
+
+</View>
+
         {/* Botão Principal Voltar para a Lista */}
         <TouchableOpacity
           style={styles.btnVoltarPrincipal}
@@ -246,6 +337,7 @@ export default function DetalheScreen({ route, navigation }) {
           <Text style={styles.btnVoltarPrincipalText}>Voltar para a Lista</Text>
         </TouchableOpacity>
 
+
         <View style={{ height: 32 }} />
       </ScrollView>
     </SafeAreaView>
@@ -253,6 +345,30 @@ export default function DetalheScreen({ route, navigation }) {
 }
 
 const styles = StyleSheet.create({
+  statusContainer: {
+  marginTop: 20,
+  padding: 15,
+  backgroundColor: '#FFFFFF',
+  borderRadius: 10,
+},
+
+currentStatus: {
+  fontSize: 16,
+  marginBottom: 15,
+},
+
+statusButton: {
+  backgroundColor: '#1976D2',
+  padding: 12,
+  borderRadius: 8,
+  alignItems: 'center',
+  marginBottom: 8,
+},
+
+statusButtonText: {
+  color: '#FFFFFF',
+  fontWeight: 'bold',
+},
   safeArea: {
     flex: 1,
     backgroundColor: '#1d3557',

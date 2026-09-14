@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -14,6 +14,8 @@ import {
   KeyboardAvoidingView,
   Platform,
 } from 'react-native';
+
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Ionicons, Feather, MaterialIcons } from '@expo/vector-icons';
 import Header from '../components/Header';
 import MaterialCard from '../components/MaterialCard';
@@ -22,6 +24,45 @@ import { MATERIAIS_INICIAIS } from '../data/mockData';
 export default function ListaScreen({ navigation }) {
   const [materiais, setMateriais] = useState(MATERIAIS_INICIAIS);
   const [busca, setBusca] = useState('');
+
+  // Carregar materiais salvos
+  useEffect(() => {
+  carregarMateriais();
+}, []);
+
+const carregarMateriais = async () => {
+  try {
+    const dadosSalvos = await AsyncStorage.getItem('@materiais');
+
+    if (dadosSalvos) {
+      setMateriais(JSON.parse(dadosSalvos));
+    } else {
+      await AsyncStorage.setItem(
+        '@materiais',
+        JSON.stringify(MATERIAIS_INICIAIS)
+      );
+
+      setMateriais(MATERIAIS_INICIAIS);
+    }
+  } catch (error) {
+    console.log('Erro ao carregar materiais:', error);
+  }
+};
+
+// funcao para salvar
+const salvarMateriais = async (novosMateriais) => {
+  try {
+    await AsyncStorage.setItem(
+      '@materiais',
+      JSON.stringify(novosMateriais)
+    );
+
+    setMateriais(novosMateriais);
+  } catch (error) {
+    console.log('Erro ao salvar materiais:', error);
+  }
+};
+
 
   // Estados para o Modal de Novo Material
   const [modalVisible, setModalVisible] = useState(false);
@@ -32,6 +73,10 @@ export default function ListaScreen({ navigation }) {
   const [novoUnidade, setNovoUnidade] = useState('un');
   const [novoCategoria, setNovoCategoria] = useState('Alvenaria');
   const [novoStatus, setNovoStatus] = useState('Em estoque');
+  const [novoLocalizacao, setNovoLocalizacao] = useState('');
+  const [novoFornecedor, setNovoFornecedor] = useState('');
+  const [novoPreco, setNovoPreco] = useState('');
+  const [novoEstoqueMinimo, setNovoEstoqueMinimo] = useState('');
 
   // Filtragem dos materiais por texto de busca
   const materiaisFiltrados = materiais.filter((item) => {
@@ -49,62 +94,68 @@ export default function ListaScreen({ navigation }) {
     navigation.navigate('Detalhe', { material });
   };
 
-  // Ação do Botão Adicionar / Novo Material (Fase 1: Alert "Em breve")
-  const handleNovoMaterialPress = () => {
+  // Ação do Botão Adicionar / Novo Material
+const handleNovoMaterialPress = () => {
+  setModalVisible(true);
+};
+
+// Cadastro de Novo Material - Fase 2
+const handleCadastrarMaterial = async () => {
+  if (!novoNome.trim()) {
     Alert.alert(
-      'Em breve 🚧',
-      'A funcionalidade de cadastro de novos materiais estará disponível na Fase 2 (com persistência no banco de dados SQLite local).',
-      [
-        { text: 'OK', style: 'cancel' },
-        { text: 'Testar Formulário (Demo)', onPress: () => setModalVisible(true) },
-      ]
+      'Campo obrigatório',
+      'Informe o nome do material.'
     );
+    return;
+  }
+
+  const novoMaterial = {
+    id: Date.now().toString(),
+    nome: novoNome.trim(),
+    codigo: novoCodigo.trim().toUpperCase(),
+    descricao: novoDescricao.trim() || 'Material de construção civil',
+    categoria: novoCategoria,
+    estoque: Number(novoEstoque) || 0,
+    estoqueMinimo: Number(novoEstoqueMinimo) || 0,
+    unidade: novoUnidade,
+    localizacao: novoLocalizacao || 'Almoxarifado Principal',
+    fornecedor: novoFornecedor || 'Fornecedor Padrão',
+    precoUnitario: Number(novoPreco) || 0,
+    status: novoStatus,
+    tipoStatus:
+      novoStatus === 'Em falta'
+        ? 'danger'
+        : novoStatus === 'Estoque baixo'
+        ? 'warning'
+        : 'success'
   };
 
-  // Cadastro de Novo Material (Fase 1: memória com notificação de persistência SQLite na Fase 2)
-  const handleCadastrarMaterial = () => {
-    if (!novoNome.trim() || !novoCodigo.trim() || !novoEstoque.trim()) {
-      Alert.alert('Campos Obrigatórios', 'Por favor, preencha o Nome, Código e a Quantidade do material.');
-      return;
-    }
+  const novaLista = [
+    novoMaterial,
+    ...materiais
+  ];
 
-    let tipoStatus = 'success';
-    if (novoStatus === 'Estoque baixo') tipoStatus = 'warning';
-    if (novoStatus === 'Em falta') tipoStatus = 'danger';
+  await salvarMateriais(novaLista);
 
-    const novoItem = {
-      id: String(Date.now()),
-      nome: novoNome.trim(),
-      descricao: novoDescricao.trim() || 'Material de construção civil',
-      codigo: novoCodigo.trim().toUpperCase(),
-      estoque: parseInt(novoEstoque, 10) || 0,
-      unidade: novoUnidade,
-      estoqueMinimo: 20,
-      status: novoStatus,
-      tipoStatus: tipoStatus,
-      categoria: novoCategoria,
-      localizacao: 'Almoxarifado Principal',
-      fornecedor: 'Fornecedor Padrão',
-      precoUnitario: 'R$ 0,00',
-      valorTotalEstoque: 'R$ 0,00',
-      detalhes: novoDescricao.trim() || 'Item adicionado via formulário de materiais.',
-      tipoIcone: 'boxes',
-    };
+  setModalVisible(false);
 
-    setMateriais([novoItem, ...materiais]);
-    setModalVisible(false);
+  setNovoNome('');
+  setNovoCodigo('');
+  setNovoDescricao('');
+  setNovoEstoque('');
+  setNovoCategoria('Alvenaria');
+  setNovoUnidade('un');
+  setNovoStatus('Em estoque');
+  setNovoLocalizacao('');
+  setNovoFornecedor('');
+  setNovoPreco('');
+  setNovoEstoqueMinimo('');
 
-    // Limpar campos
-    setNovoNome('');
-    setNovoCodigo('');
-    setNovoDescricao('');
-    setNovoEstoque('');
-
-    Alert.alert(
-      'Sucesso! 🎉',
-      `Material "${novoItem.nome}" cadastrado na lista temporária!\n\n(Na Fase 2 será persistido no banco SQLite).`
-    );
-  };
+  Alert.alert(
+    'Sucesso! 🎉',
+    'Material cadastrado e salvo com sucesso.'
+  );
+};
 
   return (
     <SafeAreaView style={styles.safeArea}>
@@ -300,7 +351,7 @@ export default function ListaScreen({ navigation }) {
               <View style={styles.faseInfoBox}>
                 <Ionicons name="information-circle-outline" size={20} color="#1d3557" />
                 <Text style={styles.faseInfoText}>
-                  <Text style={{ fontWeight: '700' }}>Fase 1:</Text> O cadastro adiciona dinamicamente à lista. Na Fase 2 será persistido no SQLite local.
+                  <Text style={{ fontWeight: '700' }}>Fase 2:</Text> Os materiais cadastrados são salvos localmente usando AsyncStorage.
                 </Text>
               </View>
             </ScrollView>
@@ -325,9 +376,62 @@ export default function ListaScreen({ navigation }) {
       </Modal>
     </SafeAreaView>
   );
-}
+};
+
 
 const styles = StyleSheet.create({
+  modalContainer: {
+  flex: 1,
+  backgroundColor: 'rgba(0, 0, 0, 0.5)',
+  justifyContent: 'center',
+  padding: 20,
+},
+
+modalContent: {
+  backgroundColor: '#FFFFFF',
+  borderRadius: 15,
+  padding: 20,
+  maxHeight: '90%',
+},
+
+modalTitle: {
+  fontSize: 22,
+  fontWeight: 'bold',
+  marginBottom: 20,
+},
+
+input: {
+  borderWidth: 1,
+  borderColor: '#CCCCCC',
+  borderRadius: 8,
+  padding: 12,
+  marginBottom: 10,
+  backgroundColor: '#FFFFFF',
+},
+
+saveButton: {
+  backgroundColor: '#F57C00',
+  padding: 14,
+  borderRadius: 8,
+  alignItems: 'center',
+  marginTop: 10,
+},
+
+saveButtonText: {
+  color: '#FFFFFF',
+  fontWeight: 'bold',
+},
+
+cancelButton: {
+  padding: 14,
+  alignItems: 'center',
+  marginTop: 5,
+},
+
+cancelButtonText: {
+  color: '#666666',
+  fontWeight: 'bold',
+},
   safeArea: {
     flex: 1,
     backgroundColor: '#1d3557',
