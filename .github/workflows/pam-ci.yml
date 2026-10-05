@@ -2,12 +2,17 @@ name: PAM I - Validacao das fases e nota
 
 on:
   push:
+    branches:
+      - main
   pull_request:
   workflow_dispatch:
 
 concurrency:
   group: pam-ci-${{ github.ref }}
   cancel-in-progress: false
+
+permissions:
+  contents: write
 
 jobs:
   validacao:
@@ -39,3 +44,22 @@ jobs:
             nota.md
             nota.json
           overwrite: true
+
+      - name: Escrever a nota no README e no NOTA.md
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main' && github.actor != 'github-actions[bot]'
+        run: node .github/scripts/publicar-nota.mjs
+        shell: bash
+
+      - name: Commitar a nota no repositorio (sem re-disparar o CI)
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main' && github.actor != 'github-actions[bot]'
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add README.md NOTA.md
+          if git diff --staged --quiet; then
+            echo "Nota sem mudanca — nada a commitar."
+          else
+            git commit -m "docs: atualiza a nota automatica [skip ci]"
+            git push
+          fi
+        shell: bash
