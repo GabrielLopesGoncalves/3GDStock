@@ -1,0 +1,41 @@
+name: PAM I - Validacao das fases e nota
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+concurrency:
+  group: pam-ci-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  validacao:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Instalar Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Validar fases e gerar a nota
+        id: nota
+        run: node .github/scripts/pam-ci.mjs
+        shell: bash
+
+      - name: Publicar a nota na aba Actions (resumo)
+        if: always()
+        run: cat nota.md >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Upload do artefato com a nota atual
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: nota-pam
+          path: |
+            nota.md
+            nota.json
+          overwrite: true
