@@ -127,3 +127,20 @@ Gerenciamento e controle de estoque para materiais de construção civil — aux
 - **React Navigation Native & Native-Stack** (v7)
 - **Expo Vector Icons** (Ionicons, Feather, MaterialCommunityIcons)
 - **SQLite** (Planejado para persistência local nas Fases 2/3)
+
+
+---
+
+## Colaboração por integrante
+
+> *Excluídos: commits do professor Jackson Sá (wendelmax), `github-actions[bot]` e `dependabot[bot]`. Contagem com base em `git log --no-merges`.*
+
+| # | Integrante | Commits | Participação |
+|---|------------|---------|--------------|
+| 1 | GABRIEL LOPES GONÇALVES | 2 | 28.6% █████░░░░░░░░░░░░░░░ |
+| 2 | Diego Alexandre Matos da Silva | 2 | 28.6% █████░░░░░░░░░░░░░░░ |
+| 3 | giovannabertoldo81@gmail.com | 1 | 14.3% ██░░░░░░░░░░░░░░░░░░ |
+| 4 | Giovanna Bertoldo | 1 | 14.3% ██░░░░░░░░░░░░░░░░░░ |
+| 5 | GabrielLopes | 1 | 14.3% ██░░░░░░░░░░░░░░░░░░ |
+
+**Total de commits considerados:** 7
