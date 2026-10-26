@@ -38,6 +38,7 @@ const IGNORED_FILES = new Set([
   'yarn.lock',
   'pnpm-lock.yaml',
   'nota.md',
+  'NOTA.md',
   'nota.json',
 ]);
 const TEXT_EXT = /\.(m?jsx?|tsx?|json|md|mjs|cts|mts)$/;
