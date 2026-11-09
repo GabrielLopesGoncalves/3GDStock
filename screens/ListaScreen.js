@@ -21,14 +21,33 @@ import Header from '../components/Header';
 import MaterialCard from '../components/MaterialCard';
 import { MATERIAIS_INICIAIS } from '../data/mockData';
 
-export default function ListaScreen({ navigation }) {
+export default function ListaScreen({ navigation, route }) {
   const [materiais, setMateriais] = useState(MATERIAIS_INICIAIS);
   const [busca, setBusca] = useState('');
+  const [usuario, setUsuario] = useState(null);
+  const [perfilVisivel, setPerfilVisivel] = useState(false);
 
   // Carregar materiais salvos
   useEffect(() => {
   carregarMateriais();
+  carregarUsuario();
 }, []);
+
+const carregarUsuario = async () => {
+  try {
+    const dadosSalvos = await AsyncStorage.getItem('@usuarios');
+    const usuarios = dadosSalvos ? JSON.parse(dadosSalvos) : [];
+    const usuarioAtual = usuarios.find((item) => item.id === route.params?.usuarioId);
+    setUsuario(usuarioAtual || null);
+  } catch (error) {
+    console.log('Erro ao carregar usuário:', error);
+  }
+};
+
+const sairDaConta = () => {
+  setPerfilVisivel(false);
+  navigation.replace('Login');
+};
 
 const carregarMateriais = async () => {
   try {
@@ -162,7 +181,7 @@ const handleCadastrarMaterial = async () => {
       <StatusBar barStyle="light-content" backgroundColor="#1d3557" />
 
       {/* Barra de Topo do Sistema */}
-      <Header />
+      <Header onProfilePress={() => setPerfilVisivel(true)} />
 
       {/* Conteúdo Principal */}
       <View style={styles.container}>
@@ -228,6 +247,43 @@ const handleCadastrarMaterial = async () => {
 
       {/* Barra Inferior (Footer escuro com design do mockup) */}
       <View style={styles.bottomBar} />
+
+      <Modal
+        visible={perfilVisivel}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setPerfilVisivel(false)}
+      >
+        <View style={styles.profileOverlay}>
+          <View style={styles.profileModal}>
+            <View style={styles.profileModalHeader}>
+              <Text style={styles.profileTitle}>Meu perfil</Text>
+              <TouchableOpacity
+                onPress={() => setPerfilVisivel(false)}
+                accessibilityLabel="Fechar perfil"
+                style={styles.profileClose}
+              >
+                <Ionicons name="close" size={22} color="#64748b" />
+              </TouchableOpacity>
+            </View>
+            <View style={styles.profileAvatar}>
+              <Ionicons name="person" size={26} color="#1d3557" />
+            </View>
+            <Text style={styles.profileName}>{usuario?.nome || 'Usuário'}</Text>
+            <Text style={styles.profileRole}>{usuario?.perfil || 'Conta local'}</Text>
+            <View style={styles.profileDetails}>
+              <Text style={styles.profileLabel}>E-mail</Text>
+              <Text style={styles.profileValue}>{usuario?.email || 'Não disponível'}</Text>
+              <Text style={styles.profileLabel}>Tipo de conta</Text>
+              <Text style={styles.profileValue}>{usuario?.perfil || 'Não disponível'}</Text>
+            </View>
+            <TouchableOpacity style={styles.logoutButton} onPress={sairDaConta} activeOpacity={0.85}>
+              <Feather name="log-out" size={17} color="#ffffff" />
+              <Text style={styles.logoutText}>Sair da conta</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
 
       {/* Modal de Cadastro de Material (Fase 1 / Em Breve SQLite) */}
       <Modal
@@ -380,6 +436,51 @@ const handleCadastrarMaterial = async () => {
 
 
 const styles = StyleSheet.create({
+  profileOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(15, 23, 42, 0.6)',
+    justifyContent: 'center',
+    padding: 20,
+  },
+  profileModal: {
+    width: '100%',
+    maxWidth: 380,
+    alignSelf: 'center',
+    backgroundColor: '#ffffff',
+    borderRadius: 12,
+    padding: 22,
+    borderWidth: 1,
+    borderColor: '#e2e8f0',
+  },
+  profileModalHeader: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
+  profileTitle: { color: '#0f172a', fontSize: 18, fontWeight: '800' },
+  profileClose: { padding: 4 },
+  profileAvatar: {
+    width: 58,
+    height: 58,
+    borderRadius: 29,
+    backgroundColor: '#eaf0f6',
+    alignItems: 'center',
+    justifyContent: 'center',
+    alignSelf: 'center',
+    marginTop: 16,
+  },
+  profileName: { color: '#0f172a', fontSize: 18, fontWeight: '800', textAlign: 'center', marginTop: 10 },
+  profileRole: { color: '#f37207', fontSize: 12, fontWeight: '700', textAlign: 'center', marginTop: 3 },
+  profileDetails: { borderTopWidth: 1, borderTopColor: '#e2e8f0', marginTop: 18, paddingTop: 14 },
+  profileLabel: { color: '#64748b', fontSize: 11, fontWeight: '600', marginTop: 8 },
+  profileValue: { color: '#1e293b', fontSize: 13, fontWeight: '700', marginTop: 3 },
+  logoutButton: {
+    minHeight: 44,
+    backgroundColor: '#1d3557',
+    borderRadius: 8,
+    marginTop: 20,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+  },
+  logoutText: { color: '#ffffff', fontSize: 13, fontWeight: '800' },
   modalContainer: {
   flex: 1,
   backgroundColor: 'rgba(0, 0, 0, 0.5)',

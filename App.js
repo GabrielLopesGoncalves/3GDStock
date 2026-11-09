@@ -4,9 +4,10 @@ import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
-import { registerRootComponent } from 'expo';
 import ListaScreen from './screens/ListaScreen';
 import DetalheScreen from './screens/DetalheScreen';
+import LoginScreen from './screens/LoginScreen';
+import CadastroScreen from './screens/CadastroScreen';
 
 const Stack = createNativeStackNavigator();
 
@@ -21,12 +22,22 @@ export default function App() {
           <NavigationContainer>
             <StatusBar style="light" backgroundColor="#1d3557" />
             <Stack.Navigator
-              initialRouteName="Lista"
+              initialRouteName="Login"
               screenOptions={{
                 headerShown: false,
                 animation: 'slide_from_right',
               }}
             >
+              <Stack.Screen
+                name="Login"
+                component={LoginScreen}
+                options={{ title: 'Entrar no 3GDStock' }}
+              />
+              <Stack.Screen
+                name="Cadastro"
+                component={CadastroScreen}
+                options={{ title: 'Criar conta' }}
+              />
               <Stack.Screen 
                 name="Lista" 
                 component={ListaScreen} 
@@ -76,4 +87,3 @@ const styles = StyleSheet.create({
   },
 });
 
-registerRootComponent(App);
