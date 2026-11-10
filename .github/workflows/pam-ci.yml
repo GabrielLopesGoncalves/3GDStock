@@ -46,12 +46,12 @@ jobs:
           overwrite: true
 
       - name: Escrever a nota no README e no NOTA.md
-        if: github.event_name == 'push' && github.ref == 'refs/heads/main' && github.actor != 'github-actions[bot]'
+        if: (github.event_name == 'push' || github.event_name == 'workflow_dispatch') && github.ref == 'refs/heads/main' && github.actor != 'github-actions[bot]'
         run: node .github/scripts/publicar-nota.mjs
         shell: bash
 
       - name: Commitar a nota no repositorio (sem re-disparar o CI)
-        if: github.event_name == 'push' && github.ref == 'refs/heads/main' && github.actor != 'github-actions[bot]'
+        if: (github.event_name == 'push' || github.event_name == 'workflow_dispatch') && github.ref == 'refs/heads/main' && github.actor != 'github-actions[bot]'
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
