@@ -6,15 +6,15 @@
 
 ![](https://img.shields.io/static/v1?label=Nota%20PAM%20I&message=R&color=orange)
 
-**Nota atual: R** · 44% (24/55 pontos) · rodada de 2026-11-09 22:57:30 · commit `d9b9082`
+**Nota atual: R** · 49% (27/55 pontos) · rodada de 2026-11-10 15:25:59 · commit `6a7ca39`
 
 Legenda: I = Insuficiente (0–25%) · R = Regular (25–50%) · B = Bom (50–75%) · MB = Muito bom (75–100%)
 
 | Fase | Pontos | Situação |
 |---|---|---|
 | Fase 1 — Estrutura | 9/10 | em desenvolvimento |
-| Fase 2 — AsyncStorage | 11/15 | em desenvolvimento |
-| Fase 3 — SQLite | 4/30 | iniciando |
+| Fase 2 — AsyncStorage | 12/15 | em desenvolvimento |
+| Fase 3 — SQLite | 6/30 | iniciando |
 
 ## Checklist validado
 
@@ -31,7 +31,7 @@ Legenda: I = Insuficiente (0–25%) · R = Regular (25–50%) · B = Bom (50–7
 - [x] **(+1 pts)** app.json identifica o app (name/slug preenchidos) — `app.json`
 - [x] **(+1 pts)** Projeto tem pelo menos 2 arquivos de tela/código — `4 arquivos de tela`
 
-### Fase 2 — Persistência com AsyncStorage (11/15 pts)
+### Fase 2 — Persistência com AsyncStorage (12/15 pts)
 
 - [x] **(+1 pts)** Dependência async-storage está no package.json — `no package.json`
 - [x] **(+1 pts)** Existe import do AsyncStorage no código — `screens/CadastroScreen.js`
@@ -40,16 +40,16 @@ Legenda: I = Insuficiente (0–25%) · R = Regular (25–50%) · B = Bom (50–7
 - [x] **(+1 pts)** Existe função de CARREGAR a lista (carregar/load) — `index.js`
 - [x] **(+1 pts)** Existe função de ADICIONAR/CADASTRAR — `screens/CadastroScreen.js`
 - [x] **(+1 pts)** Existe busca por id (buscar/find/getItem) — `screens/CadastroScreen.js`
-- [x] **(+1 pts)** Existe função de EXCLUIR/remover — `screens/ListaScreen.js`
+- [x] **(+1 pts)** Existe função de EXCLUIR/remover — `screens/DetalheScreen.js`
 - [ ] **(+1 pts)** Formulário lê entradas com TextInput — `—`
 - [ ] **(+1 pts)** Formulário salva chamando adicionar/salvar — `—`
 - [x] **(+1 pts)** Lista é alimentada a partir do storage — `screens/ListaScreen.js`
 - [x] **(+1 pts)** Tela de detalhe usa busca/dados do storage — `screens/DetalheScreen.js`
-- [ ] **(+1 pts)** Exclusão usa confirmação (Alert.alert) — `—`
+- [x] **(+1 pts)** Exclusão usa confirmação (Alert.alert) — `screens/DetalheScreen.js`
 - [x] **(+1 pts)** Dados iniciais/seed são gravados na 1ª execução — `screens/CadastroScreen.js`
 - [ ] **(+1 pts)** Formulário valida campos (trim/length/vazio) — `—`
 
-### Fase 3 — Banco de dados SQLite (4/30 pts)
+### Fase 3 — Banco de dados SQLite (6/30 pts)
 
 - [ ] **(+2x2 pts)** Dependência expo-sqlite está no package.json — `FALTA instalar: npx expo install expo-sqlite`
 - [ ] **(+2x2 pts)** Existe import do expo-sqlite — `—`
@@ -63,7 +63,7 @@ Legenda: I = Insuficiente (0–25%) · R = Regular (25–50%) · B = Bom (50–7
 - [ ] **(+2x2 pts)** Banco aberto com openDatabaseAsync/openDatabase — `—`
 - [x] **(+2x2 pts)** Tela de lista carrega dados do banco — `screens/ListaScreen.js`
 - [ ] **(+2x2 pts)** Formulário salva no banco (INSERT/runAsync) — `—`
-- [ ] **(+2x2 pts)** Detalhe busca no banco com WHERE/SELECT — `screens/DetalheScreen.js`
+- [x] **(+2x2 pts)** Detalhe busca no banco com WHERE/SELECT — `screens/DetalheScreen.js`
 - [x] **(+2x2 pts)** Usa async/await corretamente (mais de 2 await) — `screens/CadastroScreen.js`
 - [ ] **(+2x2 pts)** Banco possui dados iniciais (seed inserido em SQL) — `—`
 

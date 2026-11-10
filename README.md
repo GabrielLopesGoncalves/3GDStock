@@ -5,13 +5,13 @@
 
 [![CI](https://github.com/GabrielLopesGoncalves/3GDStock/actions/workflows/pam-ci.yml/badge.svg)](https://github.com/GabrielLopesGoncalves/3GDStock/actions/workflows/pam-ci.yml) [![Nota](https://img.shields.io/badge/Nota%20PAM%20I-R-orange)](https://github.com/GabrielLopesGoncalves/3GDStock/actions/workflows/pam-ci.yml)
 
-**R** — Regular · **44%** (24/55 pontos) · atualizado em 2026-11-09 22:57
+**R** — Regular · **49%** (27/55 pontos) · atualizado em 2026-11-10 15:25
 
 | Fase | Pontos |
 |------|--------|
 | Fase 1 — Estrutura | 9/10 |
-| Fase 2 — AsyncStorage | 11/15 |
-| Fase 3 — SQLite | 4/30 |
+| Fase 2 — AsyncStorage | 12/15 |
+| Fase 3 — SQLite | 6/30 |
 
 Checklist item a item em [NOTA.md](NOTA.md) · [ver a rodada mais recente no Actions](https://github.com/GabrielLopesGoncalves/3GDStock/actions/workflows/pam-ci.yml)
 <!-- PAM-CI-NOTA-FIM -->
