@@ -3,17 +3,18 @@
 <!-- PAM-CI-NOTA-INICIO -->
 ### Nota atual (automática) — 3GD (estoque de materiais de construção)
 
-[![CI](https://github.com/GabrielLopesGoncalves/3GDStock/actions/workflows/pam-ci.yml/badge.svg)](https://github.com/GabrielLopesGoncalves/3GDStock/actions/workflows/pam-ci.yml) [![Nota](https://img.shields.io/badge/Nota%20PAM%20I-R-orange)](https://github.com/GabrielLopesGoncalves/3GDStock/actions/workflows/pam-ci.yml)
+[![CI](https://github.com/ORG/REPO/actions/workflows/pam-ci.yml/badge.svg)](https://github.com/ORG/REPO/actions/workflows/pam-ci.yml) [![Nota](https://img.shields.io/badge/Nota%20PAM%20I-R-orange)](https://github.com/ORG/REPO/actions/workflows/pam-ci.yml)
 
-**R** — Regular · **44%** (24/55 pontos) · atualizado em 2026-11-09 22:57
+**R** — Regular · **40%** (40/100 pontos) · atualizado em 2026-11-10 01:28
 
 | Fase | Pontos |
 |------|--------|
 | Fase 1 — Estrutura | 9/10 |
 | Fase 2 — AsyncStorage | 11/15 |
-| Fase 3 — SQLite | 4/30 |
+| Fase 3 — SQLite | 2/30 |
+| Fase 4 — Versão Final (UX e Dispositivo) | 18/45 |
 
-Checklist item a item em [NOTA.md](NOTA.md) · [ver a rodada mais recente no Actions](https://github.com/GabrielLopesGoncalves/3GDStock/actions/workflows/pam-ci.yml)
+Checklist item a item em [NOTA.md](NOTA.md) · [ver a rodada mais recente no Actions](https://github.com/ORG/REPO/actions/workflows/pam-ci.yml)
 <!-- PAM-CI-NOTA-FIM -->
 
 3GD — Projeto PAM I (Programação para Aplicativos Móveis I)
