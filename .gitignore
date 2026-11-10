@@ -1,0 +1,23 @@
+# Dependencies
+node_modules/
+.pnp
+.pnp.js
+
+# Expo & Build artifacts
+.expo/
+.expo-shared/
+dist/
+web-build/
+
+# Yarn
+.yarn/*
+!.yarn/patches
+!.yarn/plugins
+!.yarn/releases
+!.yarn/sdks
+!.yarn/versions
+
+# OS files
+.DS_Store
+Thumbs.db
+*.log
