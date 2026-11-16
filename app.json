@@ -4,7 +4,6 @@
     "slug": "3gd-stock",
     "version": "1.0.0",
     "orientation": "portrait",
-    "icon": "./assets/icon.png",
     "userInterfaceStyle": "light",
     "splash": {
       "backgroundColor": "#1e3557"
@@ -17,11 +16,11 @@
         "backgroundColor": "#1e3557"
       }
     },
-    "web": {
-      "favicon": "./assets/favicon.png"
-    },
+    "web": {},
     "plugins": [
-      "expo-font"
+      "expo-font",
+      "expo-sqlite",
+      "expo-asset"
     ]
   }
 }
