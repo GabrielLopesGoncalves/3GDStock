@@ -1,4 +1,4 @@
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useRef } from 'react';
 import {
   View,
   Text,
@@ -20,10 +20,15 @@ import { useFocusEffect } from '@react-navigation/native';
 import { Ionicons, Feather, MaterialIcons } from '@expo/vector-icons';
 import Header from '../components/Header';
 import MaterialCard from '../components/MaterialCard';
-import { MATERIAIS_INICIAIS } from '../data/mockData';
+import { listarMateriais, listarCategorias, criarMaterial, numero } from '../database/database';
+import * as Crypto from 'expo-crypto';
 
 export default function ListaScreen({ navigation, route }) {
-  const [materiais, setMateriais] = useState(MATERIAIS_INICIAIS);
+  const [materiais, setMateriais] = useState([]);
+  const [categorias, setCategorias] = useState([]);
+  const [salvando, setSalvando] = useState(false);
+  const [erroLista, setErroLista] = useState('');
+  const consultaAtual = useRef(0);
   const [busca, setBusca] = useState('');
   const [filtrosVisiveis, setFiltrosVisiveis] = useState(false);
   const [statusFiltro, setStatusFiltro] = useState('Todos');
@@ -47,46 +52,28 @@ const sairDaConta = () => {
   navigation.replace('Login');
 };
 
-const carregarMateriais = async () => {
+const carregarMateriais = useCallback(async () => {
+  const consulta = ++consultaAtual.current;
   try {
-    const dadosSalvos = await AsyncStorage.getItem('@materiais');
-
-    if (dadosSalvos) {
-      setMateriais(JSON.parse(dadosSalvos));
-    } else {
-      await AsyncStorage.setItem(
-        '@materiais',
-        JSON.stringify(MATERIAIS_INICIAIS)
-      );
-
-      setMateriais(MATERIAIS_INICIAIS);
-    }
+    const registros = await listarMateriais(busca, statusFiltro, categoriaFiltro);
+    const opcoes = await listarCategorias();
+    if (consulta !== consultaAtual.current) return;
+    setMateriais(registros);
+    setCategorias(opcoes);
+    setErroLista('');
   } catch (error) {
-    console.log('Erro ao carregar materiais:', error);
+    if (consulta === consultaAtual.current) setErroLista('Não foi possível carregar os materiais. Toque para tentar novamente.');
   }
-};
+}, [busca, statusFiltro, categoriaFiltro]);
 
-// funcao para salvar
-const salvarMateriais = async (novosMateriais) => {
-  try {
-    await AsyncStorage.setItem(
-      '@materiais',
-      JSON.stringify(novosMateriais)
-    );
+useFocusEffect(useCallback(() => {
+  carregarMateriais();
+  return () => { consultaAtual.current += 1; };
+}, [carregarMateriais]));
 
-    setMateriais(novosMateriais);
-  } catch (error) {
-    console.log('Erro ao salvar materiais:', error);
-  }
-};
-
-useFocusEffect(
-  useCallback(() => {
-    carregarMateriais();
-    carregarUsuario();
-  }, [route.params?.usuarioId])
-);
-
+useFocusEffect(useCallback(() => {
+  carregarUsuario();
+}, [route.params?.usuarioId]));
 
   // Estados para o Modal de Novo Material
   const [modalVisible, setModalVisible] = useState(false);
@@ -102,22 +89,11 @@ useFocusEffect(
   const [novoPreco, setNovoPreco] = useState('');
   const [novoEstoqueMinimo, setNovoEstoqueMinimo] = useState('');
 
-  const categorias = [...new Set(materiais.map((item) => item.categoria).filter(Boolean))].sort();
   const filtrosAtivos = statusFiltro !== 'Todos' || categoriaFiltro !== 'Todas';
-
-  const materiaisFiltrados = materiais.filter((item) => {
-    const termo = busca.trim().toLocaleLowerCase();
-    const correspondeBusca = [item.nome, item.codigo, item.descricao, item.categoria]
-      .some((valor) => String(valor || '').toLocaleLowerCase().includes(termo));
-    const correspondeStatus = statusFiltro === 'Todos' || item.status === statusFiltro;
-    const correspondeCategoria = categoriaFiltro === 'Todas' || item.categoria === categoriaFiltro;
-
-    return correspondeBusca && correspondeStatus && correspondeCategoria;
-  });
 
   // Navegação para a Tela de Detalhes
   const handleItemPress = (material) => {
-    navigation.navigate('Detalhe', { material });
+    navigation.navigate('Detalhe', { materialId: material.id });
   };
 
   // Ação do Botão Adicionar / Novo Material
@@ -125,8 +101,9 @@ const handleNovoMaterialPress = () => {
   setModalVisible(true);
 };
 
-// Cadastro de Novo Material - Fase 2
+// Cadastro de material no SQLite
 const handleCadastrarMaterial = async () => {
+  if (salvando) return;
   if (!novoNome.trim()) {
     Alert.alert(
       'Campo obrigatório',
@@ -135,18 +112,25 @@ const handleCadastrarMaterial = async () => {
     return;
   }
 
+  if (!novoEstoque.trim() || [novoEstoque, novoEstoqueMinimo, novoPreco].some(
+    (valor) => !Number.isFinite(numero(valor)) || numero(valor) < 0
+  )) {
+    Alert.alert('Valor inválido', 'Informe um estoque inicial e use números não negativos nos valores.');
+    return;
+  }
+
   const novoMaterial = {
-    id: Date.now().toString(),
+    id: Crypto.randomUUID(),
     nome: novoNome.trim(),
     codigo: novoCodigo.trim().toUpperCase(),
     descricao: novoDescricao.trim() || 'Material de construção civil',
     categoria: novoCategoria,
-    estoque: Number(novoEstoque) || 0,
-    estoqueMinimo: Number(novoEstoqueMinimo) || 0,
+    estoque: numero(novoEstoque),
+    estoqueMinimo: numero(novoEstoqueMinimo),
     unidade: novoUnidade,
     localizacao: novoLocalizacao || 'Almoxarifado Principal',
     fornecedor: novoFornecedor || 'Fornecedor Padrão',
-    precoUnitario: Number(novoPreco) || 0,
+    precoUnitario: numero(novoPreco),
     status: novoStatus,
     tipoStatus:
       novoStatus === 'Em falta'
@@ -156,12 +140,17 @@ const handleCadastrarMaterial = async () => {
         : 'success'
   };
 
-  const novaLista = [
-    novoMaterial,
-    ...materiais
-  ];
-
-  await salvarMateriais(novaLista);
+  setSalvando(true);
+  try {
+    // criarMaterial executa INSERT INTO com parâmetros no SQLite.
+    await criarMaterial(novoMaterial);
+  } catch (error) {
+    Alert.alert('Erro', 'Não foi possível salvar o material. Tente novamente.');
+    return;
+  } finally {
+    setSalvando(false);
+  }
+  await carregarMateriais();
 
   setModalVisible(false);
 
@@ -307,9 +296,12 @@ const handleCadastrarMaterial = async () => {
           </View>
         )}
 
+        {erroLista ? <TouchableOpacity onPress={carregarMateriais}>
+          <Text style={{ color: '#b91c1c', padding: 12 }}>{erroLista}</Text>
+        </TouchableOpacity> : null}
         {/* Lista de Registros */}
         <FlatList
-          data={materiaisFiltrados}
+          data={materiais}
           keyExtractor={(item) => item.id}
           renderItem={({ item }) => (
             <MaterialCard item={item} onPress={handleItemPress} />
@@ -494,7 +486,7 @@ const handleCadastrarMaterial = async () => {
               <View style={styles.faseInfoBox}>
                 <Ionicons name="information-circle-outline" size={20} color="#1d3557" />
                 <Text style={styles.faseInfoText}>
-                  <Text style={{ fontWeight: '700' }}>Fase 2:</Text> Os materiais cadastrados são salvos localmente usando AsyncStorage.
+                  Os materiais são salvos neste dispositivo.
                 </Text>
               </View>
             </ScrollView>
@@ -510,8 +502,9 @@ const handleCadastrarMaterial = async () => {
               <TouchableOpacity
                 style={styles.btnSalvar}
                 onPress={handleCadastrarMaterial}
+                disabled={salvando}
               >
-                <Text style={styles.btnSalvarText}>Salvar Material</Text>
+                <Text style={styles.btnSalvarText}>{salvando ? 'Salvando...' : 'Salvar Material'}</Text>
               </TouchableOpacity>
             </View>
           </View>
