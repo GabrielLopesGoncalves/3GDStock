@@ -14,7 +14,7 @@ import {
 import { Feather, MaterialCommunityIcons } from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as Crypto from 'expo-crypto';
-import { emailValido, senhaValida } from '../utils/validacaoCredenciais';
+import { emailValido } from '../utils/validacaoCredenciais';
 
 const USERS_KEY = '@usuarios';
 
@@ -23,6 +23,7 @@ export default function LoginScreen({ navigation, route }) {
   const [senha, setSenha] = useState('');
   const [mostrarSenha, setMostrarSenha] = useState(false);
   const [carregando, setCarregando] = useState(false);
+  const [aviso, setAviso] = useState('');
 
   useEffect(() => {
     if (route.params?.email) setEmail(route.params.email);
@@ -34,22 +35,15 @@ export default function LoginScreen({ navigation, route }) {
 
   const entrar = async () => {
     const emailNormalizado = email.trim().toLowerCase();
+    setAviso('');
     if (!emailNormalizado || !senha) {
-      Alert.alert('Dados obrigatórios', 'Informe seu e-mail e sua senha.');
+      setAviso('Informe seu e-mail e sua senha.');
       return;
     }
     if (!emailValido(emailNormalizado)) {
-      Alert.alert('E-mail inválido', 'Use um e-mail no formato nome@dominio.com.');
+      setAviso('E-mail inválido. Use um endereço no formato nome@dominio.com.');
       return;
     }
-    if (!senhaValida(senha)) {
-      Alert.alert(
-        'Senha fora do padrão',
-        'Use mais de 6 caracteres, incluindo uma letra maiúscula, um número e um símbolo.'
-      );
-      return;
-    }
-
     setCarregando(true);
     try {
       const dados = await AsyncStorage.getItem(USERS_KEY);
@@ -61,13 +55,13 @@ export default function LoginScreen({ navigation, route }) {
       );
 
       if (!usuario || usuario.senhaHash !== senhaHash) {
-        Alert.alert('Não foi possível entrar', 'Confira seu e-mail e sua senha.');
+        setAviso('E-mail ou senha incorretos. Confira os dados informados e tente novamente.');
         return;
       }
 
       navigation.replace('Lista', { usuarioId: usuario.id });
     } catch (error) {
-      Alert.alert('Erro', 'Não foi possível acessar as contas salvas neste aparelho.');
+      setAviso('Não foi possível acessar as contas salvas neste aparelho. Tente novamente.');
     } finally {
       setCarregando(false);
     }
@@ -94,6 +88,13 @@ export default function LoginScreen({ navigation, route }) {
             <Text style={styles.title}>Bem-vindo de volta</Text>
             <Text style={styles.subtitle}>Entre para consultar e acompanhar seu estoque.</Text>
 
+            {aviso ? (
+              <View style={styles.warningBox} accessibilityRole="alert">
+                <Feather name="alert-circle" size={18} color="#b91c1c" />
+                <Text style={styles.warningText}>{aviso}</Text>
+              </View>
+            ) : null}
+
             <Text style={styles.label}>E-mail</Text>
             <View style={styles.inputWrap}>
               <Feather name="mail" size={18} color="#64748b" />
@@ -102,7 +103,10 @@ export default function LoginScreen({ navigation, route }) {
                 placeholder="voce@empresa.com"
                 placeholderTextColor="#94a3b8"
                 value={email}
-                onChangeText={setEmail}
+                onChangeText={(valor) => {
+                  setEmail(valor);
+                  setAviso('');
+                }}
                 keyboardType="email-address"
                 autoCapitalize="none"
                 autoComplete="email"
@@ -117,7 +121,10 @@ export default function LoginScreen({ navigation, route }) {
                 placeholder="Sua senha"
                 placeholderTextColor="#94a3b8"
                 value={senha}
-                onChangeText={setSenha}
+                onChangeText={(valor) => {
+                  setSenha(valor);
+                  setAviso('');
+                }}
                 secureTextEntry={!mostrarSenha}
                 autoComplete="password"
                 onSubmitEditing={entrar}
@@ -160,6 +167,24 @@ export default function LoginScreen({ navigation, route }) {
 }
 
 const styles = StyleSheet.create({
+  warningBox: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: 9,
+    marginTop: 14,
+    padding: 12,
+    borderWidth: 1,
+    borderColor: '#fecaca',
+    borderRadius: 8,
+    backgroundColor: '#fef2f2',
+  },
+  warningText: {
+    flex: 1,
+    color: '#991b1b',
+    fontSize: 13,
+    lineHeight: 19,
+    fontWeight: '600',
+  },
   flex: { flex: 1 },
   safeArea: { flex: 1, backgroundColor: '#1d3557' },
   scrollContent: { flexGrow: 1, backgroundColor: '#eaf0f6', paddingBottom: 24 },

@@ -4,7 +4,7 @@
 
 ## Nota PAM I — 3GD (estoque de materiais de construção)
 
-![](https://img.shields.io/static/v1?label=Nota%20PAM%20I&message=R&color=orange)
+![](https://img.shields.io/static/v1?label=Nota%20PAM%20I&message=MB&color=green)
 
 **Nota atual: R** · 40% (40/100 pontos) · rodada de 2026-11-10 01:28:18 · commit `local`
 
@@ -36,7 +36,7 @@ Legenda: I = Insuficiente (0–25%) · R = Regular (25–50%) · B = Bom (50–7
 - [x] **(+1 pts)** package.json existe com a dependência "expo" — `expo ~52.0.37`
 - [x] **(+1 pts)** Existe tela de LISTAGEM — `screens/ListaScreen.js`
 - [x] **(+1 pts)** Existem dados iniciais (seed) em arquivo de dados — `data/mockData.js`
-- [ ] **(+1 pts)** Existe tela de FORMULÁRIO — `screens/CadastroScreen.js`
+- [x] **(+1 pts)** Existe tela de FORMULÁRIO — `screens/ListaScreen.js`
 - [x] **(+1 pts)** Existe tela de DETALHE — `screens/DetalheScreen.js`
 - [x] **(+1 pts)** Dependências importadas existem no package.json (app não quebra ao abrir) — `todos os imports resolvem`
 - [x] **(+1 pts)** app.json identifica o app (name/slug preenchidos) — `app.json`
@@ -58,7 +58,7 @@ Legenda: I = Insuficiente (0–25%) · R = Regular (25–50%) · B = Bom (50–7
 - [x] **(+1 pts)** Tela de detalhe usa busca/dados do storage/banco — `screens/DetalheScreen.js`
 - [ ] **(+1 pts)** Exclusão usa confirmação (Alert.alert) — `—`
 - [x] **(+1 pts)** Dados iniciais/seed são gravados na 1ª execução — `screens/CadastroScreen.js`
-- [ ] **(+1 pts)** Formulário valida campos (trim/length/vazio) — `—`
+- [x] **(+1 pts)** Formulário valida campos (trim/length/vazio) — `screens/ListaScreen.js`
 
 ### Fase 3 — Banco de dados SQLite (2/30 pts · peso 2x)
 

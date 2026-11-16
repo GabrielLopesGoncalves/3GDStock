@@ -21,3 +21,7 @@ web-build/
 .DS_Store
 Thumbs.db
 *.log
+
+# Arquivos do SQLite web copiados pelo postinstall
+public/sql-wasm.js
+public/sql-wasm.wasm

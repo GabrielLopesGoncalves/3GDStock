@@ -24,6 +24,42 @@ Checklist item a item em [NOTA.md](NOTA.md) · [ver a rodada mais recente no Act
 > [!IMPORTANT]
 > **Entrega 1 Concluída!** Proposta do projeto + Aplicativo móvel com 2 telas funcionais desenvolvido em React Native + Expo.
 
+## Entrega 3 — SQLite e CRUD
+
+Os materiais são salvos no banco local `3gdstock.db`, inicializado ao abrir o app.
+A tabela `materiais` contém os campos do estoque e a data de criação.
+
+- Criar: use **Novo material**, preencha nome e estoque inicial e salve.
+- Ler: a lista e o detalhe consultam o SQLite.
+- Atualizar: no detalhe, escolha um status e toque em **Salvar status**.
+  As entradas de 10 unidades e saídas de 5 unidades também são persistidas.
+- Excluir: toque em **Excluir material** e confirme; cancelar mantém o registro.
+- Filtrar: busca por nome, código, descrição ou categoria e filtros de status/categoria
+  são combinados em consultas SQL com `WHERE` e parâmetros.
+
+Na primeira abertura, os materiais de `@materiais` no AsyncStorage são importados
+em uma transação. Sem dados anteriores, entram os três exemplos do projeto.
+Uma lista antiga vazia permanece vazia. A migração é marcada no SQLite e não se
+repete, inclusive depois de excluir todos os itens. Login e contas permanecem
+no AsyncStorage.
+
+### Conferência manual
+
+1. Rode `npm install` e `npm start` (projeto com Expo SDK 52).
+2. Entre/crie uma conta e cadastre um material.
+3. Abra o detalhe, altere o status e registre entrada/saída.
+4. Volte à lista e combine busca com filtros de status e categoria.
+5. Feche e reabra o app para conferir a persistência.
+6. Cancele uma exclusão e depois confirme; o item deve desaparecer.
+
+**Plataformas:** Android/iOS usam `expo-sqlite`. No computador, rode `npm run web`
+e abra o endereço indicado pelo Expo. O navegador usa SQLite via `sql.js`, com
+o arquivo do banco persistido no IndexedDB. As consultas e as telas são as mesmas.
+Os dados ficam separados por dispositivo e por endereço do navegador.
+
+O comando `npm install` prepara automaticamente os arquivos do SQLite web em
+`public/`. Se necessário, execute `npm run postinstall` para recriá-los.
+
 ## 👥 Integrantes do Grupo
 
 - **Gabriel Lopes Gonçalves**
@@ -127,7 +163,7 @@ Gerenciamento e controle de estoque para materiais de construção civil — aux
 - **Expo** (SDK 52+)
 - **React Navigation Native & Native-Stack** (v7)
 - **Expo Vector Icons** (Ionicons, Feather, MaterialCommunityIcons)
-- **SQLite** (Planejado para persistência local nas Fases 2/3)
+- **SQLite** (`expo-sqlite`, persistência local dos materiais na Fase 3)
 
 
 

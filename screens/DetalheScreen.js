@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -8,37 +8,49 @@ import {
   SafeAreaView,
   StatusBar,
   Alert,
+  Modal,
+  ActivityIndicator,
+  Button,
 } from 'react-native';
 import { Ionicons, Feather, MaterialCommunityIcons, FontAwesome5 } from '@expo/vector-icons';
 import MaterialIcon from '../components/MaterialIcon';
-import AsyncStorage from '@react-native-async-storage/async-storage';
+import { buscarMaterial, atualizarStatus, movimentarEstoque, excluirMaterial } from '../database/database';
 
 export default function DetalheScreen({ route, navigation }) {
-  // Recebe o item passado por parâmetro na navegação ou utiliza dados padrão caso acessado diretamente
-  const { material } = route.params || {
-    material: {
-      id: '1',
-      nome: 'Cimento CP 50kg',
-      descricao: 'Saco de cimento Portland composto',
-      codigo: 'CMN001',
-      estoque: 120,
-      unidade: 'un (sacos 50kg)',
-      estoqueMinimo: 30,
-      status: 'Em estoque',
-      tipoStatus: 'success',
-      categoria: 'Alvenaria / Cimento',
-      localizacao: 'Galpão A - Palete 04',
-      fornecedor: 'Votorantim Cimentos',
-      precoUnitario: 'R$ 38,50',
-      valorTotalEstoque: 'R$ 4.620,00',
-      detalhes: 'Cimento Portland CP II-Z-32 de alta resistência inicial e excelente trabalhabilidade, indicado para fundações, estruturas de concreto armado, argamassas de assentamento e revestimentos em geral.',
-      tipoIcone: 'cement',
-    },
+  const [material, setMaterial] = useState(null);
+  const [erro, setErro] = useState(false);
+  const carregar = async () => {
+    setErro(false);
+    try {
+      // Recarrega o registro por ID com SELECT ... WHERE no SQLite.
+      setMaterial(await buscarMaterial(route.params?.materialId));
+    } catch (error) {
+      setErro(true);
+    }
   };
+  useEffect(() => { carregar(); }, [route.params?.materialId]);
+  if (!material) {
+    return <SafeAreaView style={{ flex: 1, justifyContent: 'center', padding: 24 }}>
+      {erro ? <>
+        <Text>Não foi possível carregar o material.</Text>
+        <Button title="Tentar novamente" onPress={carregar} />
+        <Button title="Voltar" onPress={() => navigation.goBack()} />
+      </> : <ActivityIndicator />}
+    </SafeAreaView>;
+  }
+  return <DetalheMaterial material={material} navigation={navigation} />;
+}
 
+const formatarMoeda = (valor) => Number(valor).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+
+function DetalheMaterial({ material, navigation }) {
   const [estoqueAtual, setEstoqueAtual] = useState(material.estoque);
 
   const [statusAtual, setStatusAtual] = useState(material.status);
+  const [statusSelecionado, setStatusSelecionado] = useState(material.status);
+  const [confirmacao, setConfirmacao] = useState(null);
+  const [aviso, setAviso] = useState(null);
+  const [processando, setProcessando] = useState(false);
 
   const getStatusColor = (tipo) => {
     switch (tipo) {
@@ -53,92 +65,88 @@ export default function DetalheScreen({ route, navigation }) {
     }
   };
 
-  const statusColor = getStatusColor(material.tipoStatus);
+  const tipoPorStatus = {
+    'Em estoque': 'success',
+    'Estoque baixo': 'warning',
+    'Em falta': 'danger',
+  };
+  const statusColor = getStatusColor(tipoPorStatus[statusAtual]);
 
   const handleEntradaEstoque = () => {
-    Alert.alert(
-      'Registrar Entrada de Material',
-      `Deseja adicionar +10 unidades ao estoque de "${material.nome}"?`,
-      [
-        { text: 'Cancelar', style: 'cancel' },
-        {
-          text: 'Confirmar (+10)',
-          onPress: () => {
-            setEstoqueAtual((prev) => prev + 10);
-            Alert.alert('Sucesso!', 'Entrada registrada com sucesso no 3GDStock!');
-          },
-        },
-      ]
-    );
+    setConfirmacao({
+      acao: 'estoque', quantidade: 10,
+      titulo: 'Registrar entrada',
+      mensagem: `Adicionar 10 unidades de "${material.nome}"?`,
+    });
   };
 
   const handleSaidaEstoque = () => {
-    if (estoqueAtual <= 0) {
-      Alert.alert('Atenção', 'Material sem saldo disponível para saída!');
+    if (estoqueAtual < 5) {
+      setAviso({ titulo: 'Saldo insuficiente', mensagem: 'São necessárias pelo menos 5 unidades para esta saída.' });
       return;
     }
-
-    Alert.alert(
-      'Registrar Saída de Material',
-      `Deseja registrar a retirada de 5 unidades de "${material.nome}" para a obra?`,
-      [
-        { text: 'Cancelar', style: 'cancel' },
-        {
-          text: 'Confirmar (-5)',
-          onPress: () => {
-            setEstoqueAtual((prev) => Math.max(0, prev - 5));
-            Alert.alert('Sucesso!', 'Saída registrada com sucesso no 3GDStock!');
-          },
-        },
-      ]
-    );
+    setConfirmacao({
+      acao: 'estoque', quantidade: -5,
+      titulo: 'Registrar saída',
+      mensagem: `Retirar 5 unidades de "${material.nome}"?`,
+    });
   };
 
-  const alterarStatus = async (novoStatus) => {
-  try {
-    const dadosSalvos = await AsyncStorage.getItem('@materiais');
+  const confirmarAlteracaoStatus = () => {
+    if (statusSelecionado === statusAtual) return;
+    setConfirmacao({
+      acao: 'status',
+      titulo: 'Confirmar alteração de status',
+      mensagem: `Deseja alterar o status de "${material.nome}" para "${statusSelecionado}"?`,
+    });
+  };
 
-    if (!dadosSalvos) {
-      return;
-    }
+  const confirmarExclusao = () => {
+    setConfirmacao({
+      acao: 'excluir',
+      titulo: 'Excluir material',
+      mensagem: `Tem certeza de que deseja excluir "${material.nome}"? Esta ação não pode ser desfeita.`,
+    });
+  };
 
-    const materiais = JSON.parse(dadosSalvos);
+  const executarAcaoConfirmada = async () => {
+    if (!confirmacao || processando) return;
 
-    const novaLista = materiais.map((item) => {
-      if (item.id === material.id) {
-        return {
-          ...item,
-          status: novoStatus
-        };
+    setProcessando(true);
+    try {
+      if (confirmacao.acao === 'estoque') {
+        const atualizado = await movimentarEstoque(material.id, confirmacao.quantidade);
+        setEstoqueAtual(atualizado.estoque);
+        setConfirmacao(null);
+        setAviso({ titulo: 'Estoque atualizado', mensagem: 'Movimentação salva com sucesso.' });
+        return;
+      }
+      if (confirmacao.acao === 'status') {
+        await atualizarStatus(material.id, statusSelecionado, tipoPorStatus[statusSelecionado]);
+        setStatusAtual(statusSelecionado);
+        setConfirmacao(null);
+        setAviso({
+          titulo: 'Status atualizado',
+          mensagem: `O status foi alterado para "${statusSelecionado}".`,
+        });
+        return;
       }
 
-      return item;
-    });
-
-    await AsyncStorage.setItem(
-      '@materiais',
-      JSON.stringify(novaLista)
-    );
-
-    setStatusAtual(novoStatus);
-
-    Alert.alert(
-      'Status atualizado',
-      `O status foi alterado para "${novoStatus}".`
-    );
-
-  } catch (error) {
-    console.log(
-      'Erro ao alterar status:',
-      error
-    );
-
-    Alert.alert(
-      'Erro',
-      'Não foi possível alterar o status.'
-    );
-  }
-};
+      await excluirMaterial(material.id);
+      setConfirmacao(null);
+      navigation.goBack();
+    } catch (error) {
+      setConfirmacao(null);
+      setAviso({
+        titulo: 'Não foi possível concluir',
+        mensagem: error.message === 'material-not-found'
+          ? 'Este material não foi encontrado no estoque.'
+          : 'Não foi possível salvar a alteração. Confira o saldo e tente novamente.',
+      });
+    } finally {
+      setProcessando(false);
+    }
+  };
 
   return (
 
@@ -195,7 +203,7 @@ export default function DetalheScreen({ route, navigation }) {
             >
               <View style={[styles.statusDot, { backgroundColor: statusColor.dot }]} />
               <Text style={[styles.badgeText, { color: statusColor.text }]}>
-                {material.status}
+                {statusAtual}
               </Text>
             </View>
             <Text style={styles.codeText}>Ref: {material.codigo}</Text>
@@ -268,13 +276,13 @@ export default function DetalheScreen({ route, navigation }) {
 
             <View style={styles.infoItem}>
               <Text style={styles.infoItemLabel}>Preço Unitário Estimado</Text>
-              <Text style={styles.infoItemValue}>{material.precoUnitario}</Text>
+              <Text style={styles.infoItemValue}>{formatarMoeda(material.precoUnitario)}</Text>
             </View>
 
             <View style={styles.infoItem}>
               <Text style={styles.infoItemLabel}>Valor Total em Estoque</Text>
               <Text style={[styles.infoItemValue, { color: '#1d3557', fontWeight: '800' }]}>
-                {material.valorTotalEstoque}
+                {formatarMoeda(material.precoUnitario * estoqueAtual)}
               </Text>
             </View>
           </View>
@@ -286,45 +294,47 @@ export default function DetalheScreen({ route, navigation }) {
           <Text style={styles.detalhesText}>{material.detalhes}</Text>
         </View>
 
-        {/* Alteração de Status - Fase 2 */}
-<View style={styles.statusContainer}>
+        <View style={styles.statusContainer}>
+          <Text style={styles.sectionTitle}>Alterar Status</Text>
+          <Text style={styles.currentStatus}>Status atual: {statusAtual}</Text>
+          <View style={styles.statusOptions}>
+            {Object.keys(tipoPorStatus).map((status) => {
+              const selecionado = statusSelecionado === status;
+              return (
+                <TouchableOpacity
+                  key={status}
+                  style={[styles.statusButton, selecionado && styles.statusButtonSelected]}
+                  onPress={() => setStatusSelecionado(status)}
+                  accessibilityRole="radio"
+                  accessibilityState={{ selected: selecionado }}
+                >
+                  <Text style={[styles.statusButtonText, selecionado && styles.statusButtonTextSelected]}>
+                    {status}
+                  </Text>
+                </TouchableOpacity>
+              );
+            })}
+          </View>
+          <TouchableOpacity
+            style={[styles.saveStatusButton, statusSelecionado === statusAtual && styles.saveStatusButtonDisabled]}
+            onPress={confirmarAlteracaoStatus}
+            disabled={statusSelecionado === statusAtual}
+            activeOpacity={0.85}
+          >
+            <Feather name="check" size={17} color="#ffffff" />
+            <Text style={styles.saveStatusButtonText}>Salvar status</Text>
+          </TouchableOpacity>
+        </View>
 
-  <Text style={styles.sectionTitle}>
-    Alterar Status
-  </Text>
-
-  <Text style={styles.currentStatus}>
-    Status atual: {statusAtual}
-  </Text>
-
-  <TouchableOpacity
-    style={styles.statusButton}
-    onPress={() => alterarStatus('Em estoque')}
-  >
-    <Text style={styles.statusButtonText}>
-      Em estoque
-    </Text>
-  </TouchableOpacity>
-
-  <TouchableOpacity
-    style={styles.statusButton}
-    onPress={() => alterarStatus('Estoque baixo')}
-  >
-    <Text style={styles.statusButtonText}>
-      Estoque baixo
-    </Text>
-  </TouchableOpacity>
-
-  <TouchableOpacity
-    style={styles.statusButton}
-    onPress={() => alterarStatus('Em falta')}
-  >
-    <Text style={styles.statusButtonText}>
-      Em falta
-    </Text>
-  </TouchableOpacity>
-
-</View>
+        <TouchableOpacity
+          style={styles.deleteButton}
+          onPress={confirmarExclusao}
+          activeOpacity={0.85}
+          accessibilityRole="button"
+        >
+          <Feather name="trash-2" size={17} color="#b91c1c" />
+          <Text style={styles.deleteButtonText}>Excluir material</Text>
+        </TouchableOpacity>
 
         {/* Botão Principal Voltar para a Lista */}
         <TouchableOpacity
@@ -340,35 +350,188 @@ export default function DetalheScreen({ route, navigation }) {
 
         <View style={{ height: 32 }} />
       </ScrollView>
+
+      <Modal
+        visible={Boolean(confirmacao || aviso)}
+        transparent
+        animationType="fade"
+        onRequestClose={() => {
+          if (!processando) {
+            setConfirmacao(null);
+            setAviso(null);
+          }
+        }}
+      >
+        <View style={styles.dialogOverlay}>
+          <View style={styles.dialogBox}>
+            <Text style={styles.dialogTitle}>{confirmacao?.titulo || aviso?.titulo}</Text>
+            <Text style={styles.dialogMessage}>{confirmacao?.mensagem || aviso?.mensagem}</Text>
+            <View style={styles.dialogActions}>
+              {confirmacao ? (
+                <>
+                  <TouchableOpacity
+                    style={styles.dialogCancelButton}
+                    onPress={() => setConfirmacao(null)}
+                    disabled={processando}
+                  >
+                    <Text style={styles.dialogCancelText}>Cancelar</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity
+                    style={[styles.dialogConfirmButton, confirmacao.acao === 'excluir' && styles.dialogDeleteButton]}
+                    onPress={executarAcaoConfirmada}
+                    disabled={processando}
+                  >
+                    <Text style={styles.dialogConfirmText}>
+                      {processando ? 'Salvando...' : confirmacao.acao === 'excluir' ? 'Excluir' : 'Confirmar'}
+                    </Text>
+                  </TouchableOpacity>
+                </>
+              ) : (
+                <TouchableOpacity
+                  style={styles.dialogConfirmButton}
+                  onPress={() => setAviso(null)}
+                >
+                  <Text style={styles.dialogConfirmText}>Entendi</Text>
+                </TouchableOpacity>
+              )}
+            </View>
+          </View>
+        </View>
+      </Modal>
     </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
+  dialogOverlay: {
+    flex: 1,
+    justifyContent: 'center',
+    padding: 24,
+    backgroundColor: 'rgba(15, 23, 42, 0.6)',
+  },
+  dialogBox: {
+    width: '100%',
+    maxWidth: 380,
+    alignSelf: 'center',
+    padding: 22,
+    borderRadius: 12,
+    backgroundColor: '#ffffff',
+  },
+  dialogTitle: {
+    color: '#0f172a',
+    fontSize: 18,
+    fontWeight: '800',
+  },
+  dialogMessage: {
+    marginTop: 10,
+    color: '#475569',
+    fontSize: 14,
+    lineHeight: 20,
+  },
+  dialogActions: {
+    flexDirection: 'row',
+    justifyContent: 'flex-end',
+    gap: 10,
+    marginTop: 22,
+  },
+  dialogCancelButton: {
+    minHeight: 42,
+    justifyContent: 'center',
+    paddingHorizontal: 14,
+    borderRadius: 8,
+    backgroundColor: '#f1f5f9',
+  },
+  dialogCancelText: {
+    color: '#334155',
+    fontSize: 13,
+    fontWeight: '700',
+  },
+  dialogConfirmButton: {
+    minHeight: 42,
+    justifyContent: 'center',
+    paddingHorizontal: 16,
+    borderRadius: 8,
+    backgroundColor: '#1d3557',
+  },
+  dialogDeleteButton: {
+    backgroundColor: '#b91c1c',
+  },
+  dialogConfirmText: {
+    color: '#ffffff',
+    fontSize: 13,
+    fontWeight: '800',
+  },
   statusContainer: {
-  marginTop: 20,
-  padding: 15,
-  backgroundColor: '#FFFFFF',
-  borderRadius: 10,
-},
-
-currentStatus: {
-  fontSize: 16,
-  marginBottom: 15,
-},
-
-statusButton: {
-  backgroundColor: '#1976D2',
-  padding: 12,
-  borderRadius: 8,
-  alignItems: 'center',
-  marginBottom: 8,
-},
-
-statusButtonText: {
-  color: '#FFFFFF',
-  fontWeight: 'bold',
-},
+    marginTop: 20,
+    marginBottom: 14,
+    padding: 15,
+    backgroundColor: '#ffffff',
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: '#e2e8f0',
+  },
+  currentStatus: {
+    fontSize: 14,
+    color: '#475569',
+    marginBottom: 12,
+  },
+  statusOptions: {
+    gap: 8,
+  },
+  statusButton: {
+    padding: 11,
+    borderRadius: 8,
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: '#cbd5e1',
+    backgroundColor: '#ffffff',
+  },
+  statusButtonSelected: {
+    borderColor: '#1d3557',
+    backgroundColor: '#eaf0f6',
+  },
+  statusButtonText: {
+    color: '#475569',
+    fontWeight: '700',
+  },
+  statusButtonTextSelected: {
+    color: '#1d3557',
+  },
+  saveStatusButton: {
+    minHeight: 44,
+    marginTop: 12,
+    paddingHorizontal: 14,
+    borderRadius: 8,
+    backgroundColor: '#1d3557',
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+  },
+  saveStatusButtonDisabled: {
+    opacity: 0.45,
+  },
+  saveStatusButtonText: {
+    color: '#ffffff',
+    fontWeight: '800',
+  },
+  deleteButton: {
+    minHeight: 46,
+    marginBottom: 12,
+    borderWidth: 1,
+    borderColor: '#fecaca',
+    borderRadius: 8,
+    backgroundColor: '#fef2f2',
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+  },
+  deleteButtonText: {
+    color: '#b91c1c',
+    fontSize: 14,
+    fontWeight: '800',
+  },
   safeArea: {
     flex: 1,
     backgroundColor: '#1d3557',

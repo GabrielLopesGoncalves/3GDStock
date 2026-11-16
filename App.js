@@ -1,5 +1,5 @@
-import React from 'react';
-import { View, StyleSheet, Platform, useWindowDimensions } from 'react-native';
+import React, { useEffect, useState } from 'react';
+import { View, Text, Button, ActivityIndicator, StyleSheet, Platform, useWindowDimensions } from 'react-native';
 import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
@@ -9,11 +9,39 @@ import DetalheScreen from './screens/DetalheScreen';
 import LoginScreen from './screens/LoginScreen';
 import CadastroScreen from './screens/CadastroScreen';
 
+import { inicializarBanco } from './database/database';
+
 const Stack = createNativeStackNavigator();
 
 export default function App() {
+  const [pronto, setPronto] = useState(false);
+  const [erro, setErro] = useState('');
+  const prepararBanco = async () => {
+    setErro('');
+    try {
+      await inicializarBanco();
+      setPronto(true);
+    } catch (error) {
+      console.error('Erro ao abrir SQLite:', error);
+      setErro('Não foi possível abrir o banco de materiais.');
+    }
+  };
+  useEffect(() => { prepararBanco(); }, []);
   const { width } = useWindowDimensions();
   const isWebDesktop = Platform.OS === 'web' && width > 500;
+
+  if (!pronto) {
+    return (
+      <SafeAreaProvider>
+        <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', padding: 24 }}>
+          {erro ? <>
+            <Text>{erro}</Text>
+            <Button title="Tentar novamente" onPress={prepararBanco} />
+          </> : <><ActivityIndicator /><Text>Carregando materiais...</Text></>}
+        </View>
+      </SafeAreaProvider>
+    );
+  }
 
   return (
     <SafeAreaProvider>
