@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -9,34 +9,41 @@ import {
   StatusBar,
   Alert,
   Modal,
+  ActivityIndicator,
+  Button,
 } from 'react-native';
 import { Ionicons, Feather, MaterialCommunityIcons, FontAwesome5 } from '@expo/vector-icons';
 import MaterialIcon from '../components/MaterialIcon';
-import AsyncStorage from '@react-native-async-storage/async-storage';
+import { buscarMaterial, atualizarStatus, movimentarEstoque, excluirMaterial } from '../database/database';
 
 export default function DetalheScreen({ route, navigation }) {
-  // Recebe o item passado por parâmetro na navegação ou utiliza dados padrão caso acessado diretamente
-  const { material } = route.params || {
-    material: {
-      id: '1',
-      nome: 'Cimento CP 50kg',
-      descricao: 'Saco de cimento Portland composto',
-      codigo: 'CMN001',
-      estoque: 120,
-      unidade: 'un (sacos 50kg)',
-      estoqueMinimo: 30,
-      status: 'Em estoque',
-      tipoStatus: 'success',
-      categoria: 'Alvenaria / Cimento',
-      localizacao: 'Galpão A - Palete 04',
-      fornecedor: 'Votorantim Cimentos',
-      precoUnitario: 'R$ 38,50',
-      valorTotalEstoque: 'R$ 4.620,00',
-      detalhes: 'Cimento Portland CP II-Z-32 de alta resistência inicial e excelente trabalhabilidade, indicado para fundações, estruturas de concreto armado, argamassas de assentamento e revestimentos em geral.',
-      tipoIcone: 'cement',
-    },
+  const [material, setMaterial] = useState(null);
+  const [erro, setErro] = useState(false);
+  const carregar = async () => {
+    setErro(false);
+    try {
+      // Recarrega o registro por ID com SELECT ... WHERE no SQLite.
+      setMaterial(await buscarMaterial(route.params?.materialId));
+    } catch (error) {
+      setErro(true);
+    }
   };
+  useEffect(() => { carregar(); }, [route.params?.materialId]);
+  if (!material) {
+    return <SafeAreaView style={{ flex: 1, justifyContent: 'center', padding: 24 }}>
+      {erro ? <>
+        <Text>Não foi possível carregar o material.</Text>
+        <Button title="Tentar novamente" onPress={carregar} />
+        <Button title="Voltar" onPress={() => navigation.goBack()} />
+      </> : <ActivityIndicator />}
+    </SafeAreaView>;
+  }
+  return <DetalheMaterial material={material} navigation={navigation} />;
+}
 
+const formatarMoeda = (valor) => Number(valor).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+
+function DetalheMaterial({ material, navigation }) {
   const [estoqueAtual, setEstoqueAtual] = useState(material.estoque);
 
   const [statusAtual, setStatusAtual] = useState(material.status);
@@ -66,42 +73,23 @@ export default function DetalheScreen({ route, navigation }) {
   const statusColor = getStatusColor(tipoPorStatus[statusAtual]);
 
   const handleEntradaEstoque = () => {
-    Alert.alert(
-      'Registrar Entrada de Material',
-      `Deseja adicionar +10 unidades ao estoque de "${material.nome}"?`,
-      [
-        { text: 'Cancelar', style: 'cancel' },
-        {
-          text: 'Confirmar (+10)',
-          onPress: () => {
-            setEstoqueAtual((prev) => prev + 10);
-            Alert.alert('Sucesso!', 'Entrada registrada com sucesso no 3GDStock!');
-          },
-        },
-      ]
-    );
+    setConfirmacao({
+      acao: 'estoque', quantidade: 10,
+      titulo: 'Registrar entrada',
+      mensagem: `Adicionar 10 unidades de "${material.nome}"?`,
+    });
   };
 
   const handleSaidaEstoque = () => {
-    if (estoqueAtual <= 0) {
-      Alert.alert('Atenção', 'Material sem saldo disponível para saída!');
+    if (estoqueAtual < 5) {
+      setAviso({ titulo: 'Saldo insuficiente', mensagem: 'São necessárias pelo menos 5 unidades para esta saída.' });
       return;
     }
-
-    Alert.alert(
-      'Registrar Saída de Material',
-      `Deseja registrar a retirada de 5 unidades de "${material.nome}" para a obra?`,
-      [
-        { text: 'Cancelar', style: 'cancel' },
-        {
-          text: 'Confirmar (-5)',
-          onPress: () => {
-            setEstoqueAtual((prev) => Math.max(0, prev - 5));
-            Alert.alert('Sucesso!', 'Saída registrada com sucesso no 3GDStock!');
-          },
-        },
-      ]
-    );
+    setConfirmacao({
+      acao: 'estoque', quantidade: -5,
+      titulo: 'Registrar saída',
+      mensagem: `Retirar 5 unidades de "${material.nome}"?`,
+    });
   };
 
   const confirmarAlteracaoStatus = () => {
@@ -126,20 +114,15 @@ export default function DetalheScreen({ route, navigation }) {
 
     setProcessando(true);
     try {
-      const dadosSalvos = await AsyncStorage.getItem('@materiais');
-      const materiais = dadosSalvos ? JSON.parse(dadosSalvos) : [];
-      const idMaterial = String(material.id);
-
+      if (confirmacao.acao === 'estoque') {
+        const atualizado = await movimentarEstoque(material.id, confirmacao.quantidade);
+        setEstoqueAtual(atualizado.estoque);
+        setConfirmacao(null);
+        setAviso({ titulo: 'Estoque atualizado', mensagem: 'Movimentação salva com sucesso.' });
+        return;
+      }
       if (confirmacao.acao === 'status') {
-        const materialExiste = materiais.some((item) => String(item.id) === idMaterial);
-        if (!materialExiste) throw new Error('material-not-found');
-
-        const novaLista = materiais.map((item) => (
-          String(item.id) === idMaterial
-            ? { ...item, status: statusSelecionado, tipoStatus: tipoPorStatus[statusSelecionado] }
-            : item
-        ));
-        await AsyncStorage.setItem('@materiais', JSON.stringify(novaLista));
+        await atualizarStatus(material.id, statusSelecionado, tipoPorStatus[statusSelecionado]);
         setStatusAtual(statusSelecionado);
         setConfirmacao(null);
         setAviso({
@@ -149,10 +132,7 @@ export default function DetalheScreen({ route, navigation }) {
         return;
       }
 
-      const novaLista = materiais.filter((item) => String(item.id) !== idMaterial);
-      if (novaLista.length === materiais.length) throw new Error('material-not-found');
-
-      await AsyncStorage.setItem('@materiais', JSON.stringify(novaLista));
+      await excluirMaterial(material.id);
       setConfirmacao(null);
       navigation.goBack();
     } catch (error) {
@@ -161,9 +141,7 @@ export default function DetalheScreen({ route, navigation }) {
         titulo: 'Não foi possível concluir',
         mensagem: error.message === 'material-not-found'
           ? 'Este material não foi encontrado no estoque.'
-          : confirmacao.acao === 'status'
-            ? 'Não foi possível salvar o novo status.'
-            : 'Não foi possível excluir o material.',
+          : 'Não foi possível salvar a alteração. Confira o saldo e tente novamente.',
       });
     } finally {
       setProcessando(false);
@@ -298,13 +276,13 @@ export default function DetalheScreen({ route, navigation }) {
 
             <View style={styles.infoItem}>
               <Text style={styles.infoItemLabel}>Preço Unitário Estimado</Text>
-              <Text style={styles.infoItemValue}>{material.precoUnitario}</Text>
+              <Text style={styles.infoItemValue}>{formatarMoeda(material.precoUnitario)}</Text>
             </View>
 
             <View style={styles.infoItem}>
               <Text style={styles.infoItemLabel}>Valor Total em Estoque</Text>
               <Text style={[styles.infoItemValue, { color: '#1d3557', fontWeight: '800' }]}>
-                {material.valorTotalEstoque}
+                {formatarMoeda(material.precoUnitario * estoqueAtual)}
               </Text>
             </View>
           </View>
