@@ -3,15 +3,15 @@
 <!-- PAM-CI-NOTA-INICIO -->
 ### Nota atual (automática) — 3GD (estoque de materiais de construção)
 
-[![CI](https://github.com/GabrielLopesGoncalves/3GDStock/actions/workflows/pam-ci.yml/badge.svg)](https://github.com/GabrielLopesGoncalves/3GDStock/actions/workflows/pam-ci.yml) [![Nota](https://img.shields.io/badge/Nota%20PAM%20I-R-orange)](https://github.com/GabrielLopesGoncalves/3GDStock/actions/workflows/pam-ci.yml)
+[![CI](https://github.com/GabrielLopesGoncalves/3GDStock/actions/workflows/pam-ci.yml/badge.svg)](https://github.com/GabrielLopesGoncalves/3GDStock/actions/workflows/pam-ci.yml) [![Nota](https://img.shields.io/badge/Nota%20PAM%20I-MB-green)](https://github.com/GabrielLopesGoncalves/3GDStock/actions/workflows/pam-ci.yml)
 
-**R** — Regular · **49%** (27/55 pontos) · atualizado em 2026-11-10 15:25
+**MB** — Muito bom · **100%** (55/55 pontos) · atualizado em 2026-11-16 20:03
 
 | Fase | Pontos |
 |------|--------|
-| Fase 1 — Estrutura | 9/10 |
-| Fase 2 — AsyncStorage | 12/15 |
-| Fase 3 — SQLite | 6/30 |
+| Fase 1 — Estrutura | 10/10 |
+| Fase 2 — AsyncStorage | 15/15 |
+| Fase 3 — SQLite | 30/30 |
 
 Checklist item a item em [NOTA.md](NOTA.md) · [ver a rodada mais recente no Actions](https://github.com/GabrielLopesGoncalves/3GDStock/actions/workflows/pam-ci.yml)
 <!-- PAM-CI-NOTA-FIM -->
