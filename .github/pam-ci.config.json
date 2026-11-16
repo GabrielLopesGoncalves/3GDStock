@@ -3,11 +3,9 @@
   "raiz": ".",
   "principal": "App.js",
   "lista": "screens/ListaScreen.js",
-  "form": "screens/ListaScreen.js",
+  "form": "",
   "detalhe": "screens/DetalheScreen.js",
-  "dados": [
-    "data/mockData.js"
-  ],
+  "dados": ["data/mockData.js"],
   "storage": "",
-  "sqlite": "database/database.js"
+  "sqlite": ""
 }

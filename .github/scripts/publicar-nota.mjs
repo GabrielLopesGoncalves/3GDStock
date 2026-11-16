@@ -22,6 +22,17 @@ const cor = CORES[NOTA.nota] || 'lightgrey';
 const pct = NOTA.percentual;
 const data = NOTA.data.slice(0, 16);
 
+const linhasFases = [
+  `| Fase 1 — Estrutura | ${NOTA.porFase.fase1.pontos}/${NOTA.porFase.fase1.total} |`,
+  `| Fase 2 — AsyncStorage | ${NOTA.porFase.fase2.pontos}/${NOTA.porFase.fase2.total} |`,
+  `| Fase 3 — SQLite | ${NOTA.porFase.fase3.pontos}/${NOTA.porFase.fase3.total} |`,
+];
+if (NOTA.porFase.fase4) {
+  linhasFases.push(
+    `| Fase 4 — Versão Final (UX e Dispositivo) | ${NOTA.porFase.fase4.pontos}/${NOTA.porFase.fase4.total} |`,
+  );
+}
+
 const bloco = [
   INICIO,
   `### Nota atual (automática) — ${CFG.grupo}`,
@@ -32,9 +43,7 @@ const bloco = [
   '',
   '| Fase | Pontos |',
   '|------|--------|',
-  `| Fase 1 — Estrutura | ${NOTA.porFase.fase1.pontos}/${NOTA.porFase.fase1.total} |`,
-  `| Fase 2 — AsyncStorage | ${NOTA.porFase.fase2.pontos}/${NOTA.porFase.fase2.total} |`,
-  `| Fase 3 — SQLite | ${NOTA.porFase.fase3.pontos}/${NOTA.porFase.fase3.total} |`,
+  ...linhasFases,
   '',
   `Checklist item a item em [NOTA.md](NOTA.md) · [ver a rodada mais recente no Actions](https://github.com/${REPO}/actions/workflows/pam-ci.yml)`,
   FIM,
